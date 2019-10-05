@@ -1,7 +1,7 @@
 import numpy as np
 import cv2
 
-cap = cv2.VideoCapture('Videos/video_long.mp4')
+cap = cv2.VideoCapture('../Videos/video_long.mp4')
 frameWidth = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
 frameHeight = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
 framesPerSecond = cap.get(cv2.CAP_PROP_FPS)
@@ -15,6 +15,36 @@ saturationThreshold = 120
 # Values for detection of green sheet on basket
 hueLowerThresholdGREEN = 69
 hueUpperThresholdGREEN = 80
+
+def find_countours(roi):
+
+    im2, cnts, hierarchy = cv2.findContours(roi.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
+    cnts = sorted(cnts, key = cv2.contourArea, reverse = True)[:3] # get largest three contour area
+    rects = []
+    for c in cnts:
+        peri = cv2.arcLength(c, True)
+        approx = cv2.approxPolyDP(c, 0.02 * peri, True)
+        x, y, w, h = cv2.boundingRect(approx)
+        if h >= 5:
+            # if height is enough
+            # create rectangle for bounding
+            rect = (x, y, x+w, y+h)
+            rects.append(rect)
+            #cv2.rectangle(roi_copy, (x, y), (x + w, y + h), (0, 255, 0), 1)
+
+    #return (roi_copy, rects)
+    return rects
+
+def calculateCenterOfRectangle(listOfCorners):
+    # calculating the center of every rectangle to get lines between centers to calculate angles
+    cx = 0
+    cy = 0
+    print(listOfCorners)
+    if len(listOfCorners) >= 4:
+        cx = int((listOfCorners[0] + listOfCorners[2])/2)
+        cy = int((listOfCorners[1] + listOfCorners[3])/2)
+
+    return (cx, cy)
 
 while cap.isOpened():
     ret, res = cap.read()
@@ -60,6 +90,9 @@ while cap.isOpened():
         cv2.THRESH_BINARY)
     #cv2.imshow("Sat-Maske", smask)
 
+    # Rauschen rausfiltern
+    cv2.medianBlur(hMaskRed, 1, hMaskRed)
+
     # Ausschnittarray wieder auf FullSize, damit bitwise_and geht
     helperArray = np.zeros((540, 960), np.uint8)
     helperArray[120:300, 120:270] = hMaskRed
@@ -67,11 +100,28 @@ while cap.isOpened():
 
     # Verknüpfung der beiden Masken (Hue, Saturation)
     maskPlayer = cv2.bitwise_and(hMaskRed, smask)
-    cv2.medianBlur(maskPlayer, 1 ,maskPlayer)
-    cv2.imshow("Maske Spieler", maskPlayer)
+    #cv2.medianBlur(maskPlayer, 1 ,maskPlayer)
 
     maskNet = cv2.bitwise_and(hMaskGreen, smask)
+
+    # Armmarkierungen finden über Suche nach Konturen in S/W-Bild
+    maskPlayerContours = find_countours(hMaskRed)
+    for i in maskPlayerContours:
+        pt1 = (i[0], i[1])
+        pt2 = (i[2], i[3])
+        cv2.rectangle(maskPlayer, pt1, pt2, (255, 255, 255))
+        cv2.rectangle(frame, pt1, pt2, (0, 255, 0))
+
+    # draw lines between rectangles
+    # stick lines to rectangles?
+    if len(maskPlayerContours) >= 3:
+        cv2.line(maskPlayer, calculateCenterOfRectangle(maskPlayerContours[0]),
+                 calculateCenterOfRectangle(maskPlayerContours[1]), (255, 255, 255))
+        cv2.line(maskPlayer, calculateCenterOfRectangle(maskPlayerContours[1]),
+                 calculateCenterOfRectangle(maskPlayerContours[2]), (255, 255, 255))
+
     cv2.imshow("Maske Netz", maskNet)
+    cv2.imshow("Maske Spieler", maskPlayer)
 
     # Schwerpunkt Spieler bestimmen
     # (cx, cy) = centerOfMass(mask)
@@ -89,7 +139,6 @@ while cap.isOpened():
         cy = int(MN["m01"] / MN["m00"])
         # Schwerpunkt zeichnen
         cv2.circle(frame, (cx, cy), 5, (0, 255, 0), cv2.FILLED)
-
 
 
     # Verbessern: Maske filtern (MedianFilter = Störung wegfiltern), Regionengröße (Fläche bestimmen), Bereich einschränken

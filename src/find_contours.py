@@ -13,12 +13,23 @@ def find_countours(roi):
         if h >= 5:
             # if height is enough
             # create rectangle for bounding
-            rect = (x, y, w, h)
+            rect = (x, y, x+w, y+h)
             rects.append(rect)
             #cv2.rectangle(roi_copy, (x, y), (x + w, y + h), (0, 255, 0), 1)
 
     #return (roi_copy, rects)
     return rects
+
+def calculateCenterOfRectangle(listOfCorners):
+    # calculating the center of every rectangle to get lines between centers to calculate angles
+    cx = 0
+    cy = 0
+    print(listOfCorners)
+    if len(listOfCorners) >= 4:
+        cx = int((listOfCorners[0] + listOfCorners[2])/2)
+        cy = int((listOfCorners[1] + listOfCorners[3])/2)
+
+    return (cx, cy)
 
 cap = cv2.VideoCapture('../Videos/video_long.mp4')
 frameWidth = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
@@ -78,11 +89,17 @@ while cap.isOpened():
     # Armmarkierungen finden über Suche nach Konturen in S/W-Bild
     maskPlayerContours = find_countours(hMaskRed)
     for i in maskPlayerContours:
-        print(i[0])
         pt1 = (i[0], i[1])
-        pt2 = (i[0]+i[2], i[1]+i[3])
+        pt2 = (i[2], i[3])
         cv2.rectangle(maskPlayer, pt1, pt2, (255, 255, 255))
         cv2.rectangle(frame, pt1, pt2, (0, 255, 0))
+
+
+    # draw lines between rectangles
+    # stick lines to rectangles?
+    if len(maskPlayerContours) >= 3:
+        cv2.line(maskPlayer, calculateCenterOfRectangle(maskPlayerContours[0]), calculateCenterOfRectangle(maskPlayerContours[1]), (255, 255, 255))
+        cv2.line(maskPlayer, calculateCenterOfRectangle(maskPlayerContours[1]), calculateCenterOfRectangle(maskPlayerContours[2]), (255, 255, 255))
 
     cv2.imshow("Maske Spieler", maskPlayer)
 
