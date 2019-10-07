@@ -71,6 +71,9 @@ while cap.isOpened():
     # Eingeschränkter Suchbereich für rot
     constrainedFrame = frame[120:300, 120:270]
     hsvFrameConstrained = cv2.cvtColor(constrainedFrame, cv2.COLOR_BGR2HSV)
+    
+    # Flood Fill Algorithmus fürs Labeling von Regionen.
+    # Spieler versuchen zu tracken, Rechteck drumherum legen und in diesem Rechteck weiter unterteilen und nach Markierungen suchen.
 
     # Aufspaltung in 3 Graustufenbilder für H, S, V mit:
     h, s, v = cv2.split(hsvFrame)
