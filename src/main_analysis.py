@@ -91,6 +91,7 @@ while cap.isOpened():
     #cv2.imshow("Sat-Maske", smask)
 
     # Rauschen rausfiltern
+    # Warum dieser Filter? Evtl. größerer Kernel. 
     cv2.medianBlur(hMaskRed, 1, hMaskRed)
 
     # Ausschnittarray wieder auf FullSize, damit bitwise_and geht
