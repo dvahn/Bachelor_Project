@@ -16,6 +16,7 @@ saturationThreshold = 120
 hueLowerThresholdGREEN = 69
 hueUpperThresholdGREEN = 80
 
+# Evtl. Parameter für Anzahl der zurückgegebenen Rechtecke
 def find_countours(roi):
 
     im2, cnts, hierarchy = cv2.findContours(roi.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
