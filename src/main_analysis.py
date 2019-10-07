@@ -115,6 +115,7 @@ while cap.isOpened():
         pt2 = (i[2], i[3])
         cv2.rectangle(maskPlayer, pt1, pt2, (255, 255, 255))
         cv2.rectangle(frame, pt1, pt2, (0, 255, 0))
+        # vllt lieber Kreis? Rechteck um Spieler. Gibt fertige Funktionen dafür.
 
     # draw lines between rectangles
     # stick lines to rectangles?
