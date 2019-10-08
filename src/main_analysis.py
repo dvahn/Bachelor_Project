@@ -181,3 +181,9 @@ def registerThrow(angle):
     # typische Winkel als Referenz
 
 
+# Nächste Schritte:
+#
+#   Player detection (link im github)
+#   constrainedFrame automatisch definieren
+#   Markierungen labeln, Verbindungen zeichnen
+#   Treffer erkennen (evtl. gleicher Algorithmus auf Ball wie auf Player)
