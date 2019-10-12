@@ -9,3 +9,4 @@ https://www.dropbox.com/sh/jru069x8v3w1gp3/AACdkQ-0Xbp_38oReUBgTlSUa?dl=0
 [Pedestrian Detection](https://www.pyimagesearch.com/2015/11/09/pedestrian-detection-opencv/) <br/>
 [How does detection work?](https://thedatafrog.com/human-detection-video/) <br/>
 [Object detection with YOLO](https://www.pyimagesearch.com/2018/11/12/yolo-object-detection-with-opencv/) <br/>
+[Realtime Object Detection](https://www.pyimagesearch.com/2017/09/18/real-time-object-detection-with-deep-learning-and-opencv/) <br/>
