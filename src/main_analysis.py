@@ -69,10 +69,6 @@ while cap.isOpened():
 
     cv2.setMouseCallback("Video", mouseCallback)
 
-    # Player Detection
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    gray = cv2.GaussianBlur(gray, (21, 21), 0)
-
     # Umwandlung in HSV
     hsvFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
@@ -191,6 +187,6 @@ def registerThrow(angle):
 # Nächste Schritte:
 #
 #   Player detection (link im github)                                       DONE
-#   constrainedFrame automatisch definieren
+#   constrainedFrame automatisch definieren                                 In Progress...
 #   Markierungen labeln, Verbindungen zeichnen
 #   Treffer erkennen (evtl. gleicher Algorithmus auf Ball wie auf Player)
