@@ -1,5 +1,6 @@
 import numpy as np
 import cv2
+import imutils
 
 cap = cv2.VideoCapture('../Videos/video_long.mp4')
 frameWidth = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
@@ -15,6 +16,9 @@ saturationThreshold = 120
 # Values for detection of green sheet on basket
 hueLowerThresholdGREEN = 69
 hueUpperThresholdGREEN = 80
+
+# First frame
+firstFrame = None
 
 # Evtl. Parameter für Anzahl der zurückgegebenen Rechtecke
 def find_countours(roi):
@@ -51,10 +55,9 @@ while cap.isOpened():
     ret, res = cap.read()
     if ret:
         # resizing the Video frame by frame
-        frame = cv2.resize(res, (960, 540))
+        frame = imutils.resize(res, 960, 540)
     else:
         break
-
 
     # Mouse-Callback zur Farbfindung
     def mouseCallback(event, x, y, flags, param):
@@ -65,6 +68,10 @@ while cap.isOpened():
             #print("HSV value at ({},{}):{}".format(x, y, colorHSV))
 
     cv2.setMouseCallback("Video", mouseCallback)
+
+    # Player Detection
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    gray = cv2.GaussianBlur(gray, (21, 21), 0)
 
     # Umwandlung in HSV
     hsvFrame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
@@ -178,12 +185,12 @@ def registerThrow(angle):
     # if angle expands fast, it might be a throw
     donothing = 0
     # zeitabhängig
-    # typische Winkel als Referenz
+    # typische Winkel als Referenz / Dirk Nowitzki
 
 
 # Nächste Schritte:
 #
-#   Player detection (link im github)
+#   Player detection (link im github)                                       DONE
 #   constrainedFrame automatisch definieren
 #   Markierungen labeln, Verbindungen zeichnen
 #   Treffer erkennen (evtl. gleicher Algorithmus auf Ball wie auf Player)
