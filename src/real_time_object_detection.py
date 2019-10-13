@@ -22,7 +22,7 @@ CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
 		   "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
 		   "dog", "horse", "motorbike", "person", "pottedplant", "sheep",
 		   "sofa", "train", "tvmonitor"]
-COLORS = np.random.uniform(0, 255, size=(len(CLASSES), 3))
+COLORS = np.random.uniform(0, 200, size=(len(CLASSES), 3))
 
 # load the serialized model from disk
 print("[INFO] Loading model...")
@@ -89,7 +89,7 @@ while cap.isOpened():
 	# grab the frame dimensions and convert it to a blob
 	(h, w) = frame.shape[:2]
 	blob = cv2.dnn.blobFromImage(cv2.resize(frame, (300, 300)),
-								 0.007843, (300, 300), 127.5)
+								0.007843, (300, 300), 127.5)
 	# pass the blob through the network and obtain the detections and
 	# predictions
 	net.setInput(blob)
@@ -113,9 +113,9 @@ while cap.isOpened():
 
 			# draw the prediction on the frame
 			label = "{}: {:.2f}%".format(CLASSES[idx],
-										 confidence * 100)
+								confidence * 100)
 			cv2.rectangle(frame, (startX, startY), (endX, endY),
-						  COLORS[idx], 2)
+						COLORS[idx], 2)
 			y = startY - 15 if startY - 15 > 15 else startY + 15
 			cv2.putText(frame, label, (startX, y),
 						cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLORS[idx], 2)
@@ -127,24 +127,23 @@ while cap.isOpened():
 		else:
 			# print rectangle if detection is lost
 			cv2.rectangle(frame, lastKnownPositionStart, lastKnownPositionEnd,
-						  COLORS[lastKnownIdx], 2)
+						COLORS[lastKnownIdx], 2)
 
-			y = lastKnownPositionStart[1] - 15 if lastKnownPositionStart[1] - 15 > 15 else lastKnownPositionStart[
-																							   1] + 15
+			y = lastKnownPositionStart[1] - 15 if lastKnownPositionStart[1] - 15 > 15 else lastKnownPositionStart[1] + 15
 			cv2.putText(frame, label, (lastKnownPositionStart[0], y),
 						cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLORS[lastKnownIdx], 2)
 
 	lowerSearchBorder = int((lastKnownPositionEnd[1] - lastKnownPositionStart[1]) / 2)
 	print(lowerSearchBorder)
 	searchFrame = frame[lastKnownPositionStart[1]:lastKnownPositionEnd[1] - lowerSearchBorder,
-				  lastKnownPositionStart[0]:lastKnownPositionEnd[0]]
+				lastKnownPositionStart[0]:lastKnownPositionEnd[0]]
 
 	hsvFrameConstrained = cv2.cvtColor(searchFrame, cv2.COLOR_BGR2HSV)
 	if hsvFrameConstrained is not np.zeros((540, 960), np.uint8):
 		hConst, sConst, vConst = cv2.split(hsvFrameConstrained)
 
 	_, smask = cv2.threshold(sConst, saturationThreshold, 255,
-							 cv2.THRESH_BINARY)
+							cv2.THRESH_BINARY)
 
 	hMaskRed = cv2.inRange(hConst, hueLowerThresholdRED, hueUpperThresholdRED)
 	cv2.medianBlur(hMaskRed, 1, hMaskRed)
@@ -183,7 +182,6 @@ while cap.isOpened():
 
 # stop the timer and display FPS information
 fps.stop()
-print("[INFO] Elapsed time: {:.2f}".format(fps.elapsed()))
 print("[INFO] Approx. FPS: {:.2f}".format(fps.fps()))
 
 # cleanup
