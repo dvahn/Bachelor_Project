@@ -44,7 +44,7 @@ def calculateCenterOfRectangle(listOfCorners):
     # calculating the center of every rectangle to get lines between centers to calculate angles
     cx = 0
     cy = 0
-    print(listOfCorners)
+    # print(listOfCorners)
     if len(listOfCorners) >= 4:
         cx = int((listOfCorners[0] + listOfCorners[2])/2)
         cy = int((listOfCorners[1] + listOfCorners[3])/2)
@@ -66,6 +66,7 @@ while cap.isOpened():
             colorRGB = tuple(reversed(colorBGR))
             colorHSV = cv2.cvtColor(np.uint8([[colorBGR]]), cv2.COLOR_BGR2HSV)
             #print("HSV value at ({},{}):{}".format(x, y, colorHSV))
+            print(x, y)
 
     cv2.setMouseCallback("Video", mouseCallback)
 
@@ -187,6 +188,7 @@ def registerThrow(angle):
 # Nächste Schritte:
 #
 #   Player detection (link im github)                                       DONE
-#   constrainedFrame automatisch definieren                                 In Progress...
+#   constrainedFrame automatisch definieren                                 DONE
 #   Markierungen labeln, Verbindungen zeichnen
 #   Treffer erkennen (evtl. gleicher Algorithmus auf Ball wie auf Player)
+#   Werte kalkulieren (Winkel, Winkel am Ende des Wurfs..)
