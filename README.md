@@ -22,6 +22,7 @@ python real_time_object_detection.py
 ## Status & Tasks ##
 - [x] Spieler mithilfe von neuronalem Netz erkennen
 - [x] Suchframe automatisch generieren
+- [x] Marker in Suchframe tracken
 - [ ] Arm-Markierungen labeln
 - [ ] Verbindungen zwischen Arm-Markierungen zeichnen
 - [ ] Winkel und andere Werte kalkulieren
