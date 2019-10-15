@@ -1,7 +1,14 @@
 # Bachelor Projektarbeit
 Basketball-Wurfanalyse mithilfe von Python, neuronalen Netzen sowie openCV. <br/>
-Es soll ein vorher gefilmtes Video von der Software hinsichtlich des Wurfverhaltens des gefilmten Spieler analysiert werden. <br/><br/> 
-[Link zu den Videos.](https://www.dropbox.com/sh/jru069x8v3w1gp3/AACdkQ-0Xbp_38oReUBgTlSUa?dl=0)
+Es soll ein vorher gefilmtes Video von der Software hinsichtlich des Wurfverhaltens des gefilmten Spieler analysiert werden. <br/>
+
+## Setup ##
+[Videos und Trainingsdaten](https://www.dropbox.com/sh/jru069x8v3w1gp3/AACdkQ-0Xbp_38oReUBgTlSUa?dl=0) herunterladen und jeweils im Skript 
+an den benötigten Stellen referenzieren. <br/><br/>
+Zum Ausführen: <br/>
+``
+python real_time_object_detection.py
+``
 
 ## Wichtige Links ##
 * [Motion Detection](https://www.pyimagesearch.com/2015/05/25/basic-motion-detection-and-tracking-with-python-and-opencv/)          
