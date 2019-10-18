@@ -194,9 +194,9 @@ while cap.isOpened():
 
 	# Armmarkierungen finden über Suche nach Konturen in S/W-Bild
 	maskPlayerContours = find_countours(maskPlayer)
-	print("Unsorted:", maskPlayerContours)
+	# print("Unsorted:", maskPlayerContours)
 	bubbleSort(maskPlayerContours)
-	print("Sorted:", maskPlayerContours)
+	# print("Sorted:", maskPlayerContours)
 	for i in maskPlayerContours:
 		center = calculateCenterOfRectangle(i)
 		cv2.circle(frame, center, 7, (0, 255, 0), 2)
