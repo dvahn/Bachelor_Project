@@ -24,7 +24,7 @@ python real_time_object_detection.py
 - [x] Suchframe automatisch generieren
 - [x] Marker in Suchframe tracken
 - [x] Arm-Markierungen labeln
-- [ ] Verbindungen zwischen Arm-Markierungen zeichnen
+- [x] Verbindungen zwischen Arm-Markierungen zeichnen
 - [ ] Winkel und andere Werte kalkulieren
 - [ ] Abgleich mit z.B. "perfektem Wurf" von Nowitzki
 - [ ] Nutzer hat die Möglichkeit die getrackte Farbe anzugeben
