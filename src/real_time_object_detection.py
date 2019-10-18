@@ -33,7 +33,7 @@ if args["prototxt"] is not None and args["model"] is not None:
 else:
 	# run default config
 	net = cv2.dnn.readNetFromCaffe("../realtime_detection/MobileNetSSD_deploy.prototxt.txt",
-								"../realtime_detection/MobileNetSSD_deploy.caffemodel")
+								   "../realtime_detection/MobileNetSSD_deploy.caffemodel")
 
 # initialize the video stream, allow the stream to warmup,
 # and initialize the FPS counter
@@ -70,6 +70,35 @@ def find_countours(roi):
 	return rects
 
 
+def calculateCenterOfRectangle(listOfCorners):
+	# calculating the center of every rectangle to get lines between centers to calculate angles
+	cx = 0
+	cy = 0
+	if len(listOfCorners) >= 4:
+		cx = int((listOfCorners[0] + listOfCorners[2]) / 2)
+		cy = int((listOfCorners[1] + listOfCorners[3]) / 2)
+
+	return cx, cy
+
+# bubble sort for detected markers, to get the lines drawn correctly
+def bubbleSort(arr):
+	n = len(arr)
+
+	if n < 3:
+		return arr
+
+	for i in range(n):
+
+		for j in range(0, n - i - 1):
+
+			if arr[j][0] > arr[j + 1][0]:
+				arr[j], arr[j + 1] = arr[j + 1], arr[j]
+
+	if calculateCenterOfRectangle(arr[1])[1] < calculateCenterOfRectangle(arr[2])[1]:
+		# check if "hand" is between "shoulder" and "elbow"
+		arr[1], arr[2] = arr[2], arr[1]
+
+
 cap = cv2.VideoCapture('../Videos/video_long.mp4')
 # vs = VideoStream(src=0).start()
 time.sleep(2.0)
@@ -89,7 +118,7 @@ while cap.isOpened():
 	# grab the frame dimensions and convert it to a blob
 	(h, w) = frame.shape[:2]
 	blob = cv2.dnn.blobFromImage(cv2.resize(frame, (300, 300)),
-								0.007843, (300, 300), 127.5)
+								 0.007843, (300, 300), 127.5)
 	# pass the blob through the network and obtain the detections and
 	# predictions
 	net.setInput(blob)
@@ -113,9 +142,9 @@ while cap.isOpened():
 
 			# draw the prediction on the frame
 			label = "{}: {:.2f}%".format(CLASSES[idx],
-								confidence * 100)
+										 confidence * 100)
 			cv2.rectangle(frame, (startX, startY), (endX, endY),
-						COLORS[idx], 2)
+						  COLORS[idx], 2)
 			y = startY - 15 if startY - 15 > 15 else startY + 15
 			cv2.putText(frame, label, (startX, y),
 						cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLORS[idx], 2)
@@ -127,23 +156,23 @@ while cap.isOpened():
 		else:
 			# print rectangle if detection is lost
 			cv2.rectangle(frame, lastKnownPositionStart, lastKnownPositionEnd,
-						COLORS[lastKnownIdx], 2)
+						  COLORS[lastKnownIdx], 2)
 
-			y = lastKnownPositionStart[1] - 15 if lastKnownPositionStart[1] - 15 > 15 else lastKnownPositionStart[1] + 15
+			y = lastKnownPositionStart[1] - 15 if lastKnownPositionStart[1] - 15 > 15 else lastKnownPositionStart[
+																							   1] + 15
 			cv2.putText(frame, label, (lastKnownPositionStart[0], y),
 						cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLORS[lastKnownIdx], 2)
 
 	lowerSearchBorder = int((lastKnownPositionEnd[1] - lastKnownPositionStart[1]) / 2)
-	print(lowerSearchBorder)
 	searchFrame = frame[lastKnownPositionStart[1]:lastKnownPositionEnd[1] - lowerSearchBorder,
-				lastKnownPositionStart[0]:lastKnownPositionEnd[0]]
+				  lastKnownPositionStart[0]:lastKnownPositionEnd[0]]
 
 	hsvFrameConstrained = cv2.cvtColor(searchFrame, cv2.COLOR_BGR2HSV)
 	if hsvFrameConstrained is not np.zeros((540, 960), np.uint8):
 		hConst, sConst, vConst = cv2.split(hsvFrameConstrained)
 
 	_, smask = cv2.threshold(sConst, saturationThreshold, 255,
-							cv2.THRESH_BINARY)
+							 cv2.THRESH_BINARY)
 
 	hMaskRed = cv2.inRange(hConst, hueLowerThresholdRED, hueUpperThresholdRED)
 	cv2.medianBlur(hMaskRed, 1, hMaskRed)
@@ -165,9 +194,20 @@ while cap.isOpened():
 
 	# Armmarkierungen finden über Suche nach Konturen in S/W-Bild
 	maskPlayerContours = find_countours(maskPlayer)
+	print("Unsorted:", maskPlayerContours)
+	bubbleSort(maskPlayerContours)
+	print("Sorted:", maskPlayerContours)
 	for i in maskPlayerContours:
-		center = (int((i[0] + i[2]) / 2), int((i[1] + i[3]) / 2))
+		center = calculateCenterOfRectangle(i)
 		cv2.circle(frame, center, 7, (0, 255, 0), 2)
+
+	# draw lines between rectangles
+	# stick lines to rectangles?
+	if len(maskPlayerContours) >= 3:
+		cv2.line(frame, calculateCenterOfRectangle(maskPlayerContours[0]),
+				calculateCenterOfRectangle(maskPlayerContours[1]), (255, 255, 255))
+		cv2.line(frame, calculateCenterOfRectangle(maskPlayerContours[1]),
+				calculateCenterOfRectangle(maskPlayerContours[2]), (255, 255, 255))
 
 	# show the output frame
 	cv2.imshow("Maske Spieler", maskPlayer)

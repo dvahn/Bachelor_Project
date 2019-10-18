@@ -27,3 +27,10 @@ python real_time_object_detection.py
 - [ ] Verbindungen zwischen Arm-Markierungen zeichnen
 - [ ] Winkel und andere Werte kalkulieren
 - [ ] Abgleich mit z.B. "perfektem Wurf" von Nowitzki
+- [ ] Nutzer hat die Möglichkeit die getrackte Farbe anzugeben
+
+
+## Probleme ##
+* Arm-Markierungen konstant tracken, um Linien zu zeichnen. Sortierung nach x-Wert klappt perfekt, 
+  nur ist das Handgelenk irgendwann im Wurfablauf "zwischen" Ellenbogen und Schulter.
+* Die vielen Array-Berechnungen schlagen sich in der Performance nieder.
