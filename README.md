@@ -26,6 +26,7 @@ python real_time_object_detection.py
 - [x] Arm-Markierungen labeln
 - [x] Verbindungen zwischen Arm-Markierungen zeichnen
 - [ ] Winkel und andere Werte kalkulieren
+- [ ] Treffer/Fehlwürfe erkennen
 - [ ] Abgleich mit z.B. "perfektem Wurf" von Nowitzki
 - [ ] Nutzer hat die Möglichkeit die getrackte Farbe anzugeben
 
