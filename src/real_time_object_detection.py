@@ -98,8 +98,9 @@ def bubbleSort(arr):
 		# check if "hand" is between "shoulder" and "elbow"
 		arr[1], arr[2] = arr[2], arr[1]
 
-
-cap = cv2.VideoCapture('../Videos/video_long.mp4')
+scaleX = 960
+scaleY = 540
+cap = cv2.VideoCapture('../Videos/video_3.mp4')
 # vs = VideoStream(src=0).start()
 time.sleep(2.0)
 fps = FPS().start()
@@ -111,10 +112,11 @@ while cap.isOpened():
 	ret, res = cap.read()
 	if ret:
 		# resizing the Video frame by frame
-		frame = imutils.resize(res, 960, 540)
+		frame = imutils.resize(res, scaleX, scaleY)
 	else:
 		break
 
+	'''Player detection with neural network'''
 	# grab the frame dimensions and convert it to a blob
 	(h, w) = frame.shape[:2]
 	blob = cv2.dnn.blobFromImage(cv2.resize(frame, (300, 300)),
@@ -149,6 +151,7 @@ while cap.isOpened():
 			cv2.putText(frame, label, (startX, y),
 						cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLORS[idx], 2)
 
+			'''Define area in which markers are tracked'''
 			lastKnownPositionStart = (startX - 10, startY - 50)
 			lastKnownPositionEnd = (endX + 10, endY + 10)
 			lastKnownIdx = idx
@@ -163,12 +166,13 @@ while cap.isOpened():
 			cv2.putText(frame, label, (lastKnownPositionStart[0], y),
 						cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLORS[lastKnownIdx], 2)
 
+	'''Tracking of markers'''
 	lowerSearchBorder = int((lastKnownPositionEnd[1] - lastKnownPositionStart[1]) / 2)
 	searchFrame = frame[lastKnownPositionStart[1]:lastKnownPositionEnd[1] - lowerSearchBorder,
 				  lastKnownPositionStart[0]:lastKnownPositionEnd[0]]
 
 	hsvFrameConstrained = cv2.cvtColor(searchFrame, cv2.COLOR_BGR2HSV)
-	if hsvFrameConstrained is not np.zeros((540, 960), np.uint8):
+	if hsvFrameConstrained is not np.zeros((scaleY, scaleX), np.uint8):
 		hConst, sConst, vConst = cv2.split(hsvFrameConstrained)
 
 	_, smask = cv2.threshold(sConst, saturationThreshold, 255,
@@ -181,7 +185,7 @@ while cap.isOpened():
 	maskPlayer = cv2.bitwise_and(hMaskRed, smask)
 
 	# Ausschnittarray wieder auf FullSize, damit bitwise_and geht
-	helperArray = np.zeros((540, 960), np.uint8)
+	helperArray = np.zeros((scaleY, scaleX), np.uint8)
 	helperArray[lastKnownPositionStart[1]:lastKnownPositionEnd[1] - lowerSearchBorder,
 	lastKnownPositionStart[0]:lastKnownPositionEnd[0]] = maskPlayer
 	maskPlayer = helperArray
@@ -209,7 +213,7 @@ while cap.isOpened():
 		cv2.line(frame, calculateCenterOfRectangle(maskPlayerContours[1]),
 				calculateCenterOfRectangle(maskPlayerContours[2]), (255, 255, 255))
 
-	# show the output frame
+	# show the output
 	cv2.imshow("Maske Spieler", maskPlayer)
 	cv2.imshow("Frame", frame)
 	cv2.imshow("Searchframe", searchFrame)

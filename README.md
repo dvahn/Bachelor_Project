@@ -10,7 +10,7 @@ Zum Ausführen: <br/>
 python real_time_object_detection.py
 ``
 
-## Wichtige Links ##
+## Links ##
 * [Motion Detection](https://www.pyimagesearch.com/2015/05/25/basic-motion-detection-and-tracking-with-python-and-opencv/)          
 * [Pedestrian Detection](https://www.pyimagesearch.com/2015/11/09/pedestrian-detection-opencv/)                                     
 * [How does detection work?](https://thedatafrog.com/human-detection-video/)                                                        
@@ -28,10 +28,17 @@ python real_time_object_detection.py
 - [ ] Winkel und andere Werte kalkulieren
 - [ ] Treffer/Fehlwürfe erkennen
 - [ ] Abgleich mit z.B. "perfektem Wurf" von Nowitzki
+- [ ] Performance verbessern (z.B. skalieren)
 - [ ] Nutzer hat die Möglichkeit die getrackte Farbe anzugeben
 
 
 ## Probleme ##
 * Arm-Markierungen konstant tracken, um Linien zu zeichnen. Sortierung nach x-Wert klappt perfekt, 
-  nur ist das Handgelenk irgendwann im Wurfablauf "zwischen" Ellenbogen und Schulter.
+  nur ist das Handgelenk irgendwann im Wurfablauf "zwischen" Ellenbogen und Schulter. (SOLVED)
 * Die vielen Array-Berechnungen schlagen sich in der Performance nieder.
+
+
+## Milestones ##
+* Person im Bild wird immer erkannt.
+* Fixpunkte am Arm des Werfers (Schulter, Ellenbogen, Handgelenk) werden richtig getrackt.
+* Vewendung einer anderen Videoquelle funktioniert direkt ohne etwas anpassen zu müssen.
