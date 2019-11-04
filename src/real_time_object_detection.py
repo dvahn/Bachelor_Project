@@ -1,6 +1,7 @@
 from imutils.video import VideoStream
 from imutils.video import FPS
 import numpy as np
+import math
 import argparse
 import imutils
 import time
@@ -69,7 +70,6 @@ def find_countours(roi):
 
 	return rects
 
-
 def calculateCenterOfRectangle(listOfCorners):
 	# calculating the center of every rectangle to get lines between centers to calculate angles
 	cx = 0
@@ -81,6 +81,7 @@ def calculateCenterOfRectangle(listOfCorners):
 	return cx, cy
 
 # bubble sort for detected markers, to get the lines drawn correctly
+# Order is: shoulder, elbow, hand
 def bubbleSort(arr):
 	n = len(arr)
 
@@ -97,6 +98,19 @@ def bubbleSort(arr):
 	if calculateCenterOfRectangle(arr[1])[1] < calculateCenterOfRectangle(arr[2])[1]:
 		# check if "hand" is between "shoulder" and "elbow"
 		arr[1], arr[2] = arr[2], arr[1]
+
+# function to calculate length of lines
+def length(p1, p2):
+	dist = math.sqrt((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2)
+	return int(dist)
+
+def get_angle(p1, p2):
+	x1, y1 = p1
+	x2, y2 = p2
+	dY = y2 - y1
+	dX = x2 - x1
+	rads = math.atan2(-dY, dX)
+	return math.degrees(rads)
 
 scaleX = 960
 scaleY = 540
@@ -208,10 +222,20 @@ while cap.isOpened():
 	# draw lines between rectangles
 	# stick lines to rectangles?
 	if len(maskPlayerContours) >= 3:
+		# shoulder to elbow
 		cv2.line(frame, calculateCenterOfRectangle(maskPlayerContours[0]),
 				calculateCenterOfRectangle(maskPlayerContours[1]), (255, 255, 255))
+		# elbow to hand
 		cv2.line(frame, calculateCenterOfRectangle(maskPlayerContours[1]),
 				calculateCenterOfRectangle(maskPlayerContours[2]), (255, 255, 255))
+
+		a = calculateCenterOfRectangle(maskPlayerContours[0])
+		b = calculateCenterOfRectangle(maskPlayerContours[1])
+		c = calculateCenterOfRectangle(maskPlayerContours[2])
+		print(abs(abs(get_angle(b, c)) - abs(get_angle(a, b))))
+		# print(math.degrees(math.acos(b/c)))
+		print(get_angle(b, c), " | ", get_angle(a, b))
+
 
 	# show the output
 	cv2.imshow("Maske Spieler", maskPlayer)
