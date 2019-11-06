@@ -59,6 +59,7 @@ hueUpperThresholdGREEN = 80
 last_frame_area = 1000
 
 hit_count = 0
+counter = 0
 
 ready = False
 ready_label = "Throwing!"
@@ -153,10 +154,14 @@ def track_scoring(fr):
 def check_ready(marker):
 
 	global ready
-	if len(marker) == 3 and marker[1][1] > marker[0][1] and marker[1][1] > marker[2][1]:
-		ready = True
+	global counter
+	if len(marker) == 3:
+		counter += 1
 	if len(marker) < 3:
 		ready = False
+		counter = 0
+	if counter >= 10:
+		ready = True
 
 scaleX = 960
 scaleY = 540
@@ -262,32 +267,31 @@ while cap.isOpened():
 		center = calculate_center_of_rectangle(i)
 		cv2.circle(frame, center, 7, (0, 255, 0), 2)
 
-	# draw lines between rectangles
-	# stick lines to rectangles?
-	if len(maskPlayerContours) >= 3:
-		# shoulder to elbow
-		cv2.line(frame, calculate_center_of_rectangle(maskPlayerContours[0]),
-				calculate_center_of_rectangle(maskPlayerContours[1]), (255, 255, 255))
-		# elbow to hand
-		cv2.line(frame, calculate_center_of_rectangle(maskPlayerContours[1]),
-				calculate_center_of_rectangle(maskPlayerContours[2]), (255, 255, 255))
-
-		a = calculate_center_of_rectangle(maskPlayerContours[0])
-		b = calculate_center_of_rectangle(maskPlayerContours[1])
-		c = calculate_center_of_rectangle(maskPlayerContours[2])
-
-		'''Calculate angle and put a label with it on screen'''
-		angle = (180-(get_angle(b, c)-get_angle(a, b)))
-		labelAngle = "{}: {:.2f}%".format('Winkel', angle)
-		cv2.putText(frame, labelAngle, (40, 40),
-					cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-
-	score_label = "{}: {}".format("Score", hit_count)
-	cv2.putText(frame, score_label, (scaleX - 170, scaleY - 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-
+	'''Checking if throwing motion is in progress'''
 	check_ready(maskPlayerContours)
 	if ready:
 		cv2.putText(frame, ready_label, (40, scaleY - 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+		# draw lines between rectangles
+		if len(maskPlayerContours) >= 3:
+			# shoulder to elbow
+			cv2.line(frame, calculate_center_of_rectangle(maskPlayerContours[0]),
+					calculate_center_of_rectangle(maskPlayerContours[1]), (255, 255, 255))
+			# elbow to hand
+			cv2.line(frame, calculate_center_of_rectangle(maskPlayerContours[1]),
+					calculate_center_of_rectangle(maskPlayerContours[2]), (255, 255, 255))
+
+			a = calculate_center_of_rectangle(maskPlayerContours[0])
+			b = calculate_center_of_rectangle(maskPlayerContours[1])
+			c = calculate_center_of_rectangle(maskPlayerContours[2])
+
+			'''Calculate angle and put a label with it on screen'''
+			angle = (180-(get_angle(b, c)-get_angle(a, b)))
+			labelAngle = "{}: {:.2f}° ".format('Winkel', angle)
+			cv2.putText(frame, labelAngle, (40, 40),
+						cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+
+	score_label = "{}: {}".format("Score", hit_count)
+	cv2.putText(frame, score_label, (scaleX - 170, scaleY - 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
 
 	'''show the output'''
 	cv2.imshow("Maske Spieler", maskPlayer)

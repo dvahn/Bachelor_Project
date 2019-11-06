@@ -27,6 +27,8 @@ python real_time_object_detection.py
 - [x] Verbindungen zwischen Arm-Markierungen zeichnen
 - [x] Winkel in der Armbeuge kalkulieren
 - [x] Treffer erkennen
+- [x] Nur bei Wurf den Winkel berechnen
+- [ ] Minimal- und Maximalwinkel für derzeitigen Wurf tracken
 - [ ] Abgleich mit z.B. "perfektem Wurf" von Nowitzki
 - [ ] Performance verbessern (z.B. skalieren)
 - [ ] Nutzer hat die Möglichkeit die getrackte Farbe anzugeben
