@@ -53,10 +53,17 @@ hueLowerThresholdRED = 174
 hueUpperThresholdRED = 177
 saturationThreshold = 120
 
+hueLowerThresholdGREEN = 69
+hueUpperThresholdGREEN = 80
 
-def find_countours(roi):
+last_frame_area = 1000
+
+hit_count = 0
+
+
+def find_contours(roi, count):
 	im2, cnts, hierarchy = cv2.findContours(roi.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-	cnts = sorted(cnts, key=cv2.contourArea, reverse=True)[:3]  # get largest three contour areas
+	cnts = sorted(cnts, key=cv2.contourArea, reverse=True)[:count]  # get largest *count* contour areas
 	rects = []
 	for c in cnts:
 		peri = cv2.arcLength(c, True)
@@ -70,19 +77,26 @@ def find_countours(roi):
 
 	return rects
 
-def calculateCenterOfRectangle(listOfCorners):
+def calculate_center_of_rectangle(list_of_corners):
 	# calculating the center of every rectangle to get lines between centers to calculate angles
 	cx = 0
 	cy = 0
-	if len(listOfCorners) >= 4:
-		cx = int((listOfCorners[0] + listOfCorners[2]) / 2)
-		cy = int((listOfCorners[1] + listOfCorners[3]) / 2)
+	if len(list_of_corners) >= 4:
+		cx = int((list_of_corners[0] + list_of_corners[2]) / 2)
+		cy = int((list_of_corners[1] + list_of_corners[3]) / 2)
 
 	return cx, cy
 
+def calculate_area_of_rectangle(list_of_corners):
+
+	area = (list_of_corners[2]-list_of_corners[0]) * (list_of_corners[3]-list_of_corners[1])
+
+	return area
+
+
 # bubble sort for detected markers, to get the lines drawn correctly
 # Order is: shoulder, elbow, hand
-def bubbleSort(arr):
+def bubble_sort(arr):
 	n = len(arr)
 
 	if n < 3:
@@ -95,14 +109,9 @@ def bubbleSort(arr):
 			if arr[j][0] > arr[j + 1][0]:
 				arr[j], arr[j + 1] = arr[j + 1], arr[j]
 
-	if calculateCenterOfRectangle(arr[1])[1] < calculateCenterOfRectangle(arr[2])[1]:
+	if calculate_center_of_rectangle(arr[1])[1] < calculate_center_of_rectangle(arr[2])[1]:
 		# check if "hand" is between "shoulder" and "elbow"
 		arr[1], arr[2] = arr[2], arr[1]
-
-# function to calculate length of lines
-def length(p1, p2):
-	dist = math.sqrt((p2[0] - p1[0]) ** 2 + (p2[1] - p1[1]) ** 2)
-	return int(dist)
 
 def get_angle(p1, p2):
 	x1, y1 = p1
@@ -111,6 +120,35 @@ def get_angle(p1, p2):
 	dX = x2 - x1
 	rads = math.atan2(-dY, dX)
 	return math.degrees(rads)
+
+def track_scoring(fr):
+
+	global last_frame_area
+	global hit_count
+	hsv_frame = cv2.cvtColor(fr, cv2.COLOR_BGR2HSV)
+	hue, sat, val = cv2.split(hsv_frame)
+	h_mask_green = cv2.inRange(hue, hueLowerThresholdGREEN, hueUpperThresholdGREEN)
+	ret1, sat_mask = cv2.threshold(sat, saturationThreshold, 255,
+								cv2.THRESH_BINARY)
+	mask_net = cv2.bitwise_and(h_mask_green, sat_mask)
+	cv2.medianBlur(mask_net, 3, mask_net)
+	net_contours = find_contours(mask_net, 1)
+
+	flat_net_contours = []
+	if len(net_contours) > 0:
+		for j in range(1):
+			for number in net_contours[j]:
+				flat_net_contours.append(number)
+
+		current_area = calculate_area_of_rectangle(flat_net_contours)
+
+		if current_area < last_frame_area * (5/10):
+			print("Hit")
+			hit_count += 1
+
+		last_frame_area = current_area
+
+
 
 scaleX = 960
 scaleY = 540
@@ -134,9 +172,8 @@ while cap.isOpened():
 	# grab the frame dimensions and convert it to a blob
 	(h, w) = frame.shape[:2]
 	blob = cv2.dnn.blobFromImage(cv2.resize(frame, (300, 300)),
-								 0.007843, (300, 300), 127.5)
-	# pass the blob through the network and obtain the detections and
-	# predictions
+								0.007843, (300, 300), 127.5)
+	# pass the blob through the network and obtain the detections and predictions
 	net.setInput(blob)
 	detections = net.forward()
 
@@ -160,7 +197,7 @@ while cap.isOpened():
 			label = "{}: {:.2f}%".format(CLASSES[idx],
 										 confidence * 100)
 			cv2.rectangle(frame, (startX, startY), (endX, endY),
-						  COLORS[idx], 2)
+						COLORS[idx], 2)
 			y = startY - 15 if startY - 15 > 15 else startY + 15
 			cv2.putText(frame, label, (startX, y),
 						cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLORS[idx], 2)
@@ -172,18 +209,16 @@ while cap.isOpened():
 
 		else:
 			# print rectangle if detection is lost
-			cv2.rectangle(frame, lastKnownPositionStart, lastKnownPositionEnd,
-						  COLORS[lastKnownIdx], 2)
+			cv2.rectangle(frame, lastKnownPositionStart, lastKnownPositionEnd, COLORS[lastKnownIdx], 2)
 
-			y = lastKnownPositionStart[1] - 15 if lastKnownPositionStart[1] - 15 > 15 else lastKnownPositionStart[
-																							   1] + 15
+			y = lastKnownPositionStart[1] - 15 if lastKnownPositionStart[1] - 15 > 15 else lastKnownPositionStart[1] + 15
 			cv2.putText(frame, label, (lastKnownPositionStart[0], y),
 						cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLORS[lastKnownIdx], 2)
 
 	'''Tracking of markers'''
 	lowerSearchBorder = int((lastKnownPositionEnd[1] - lastKnownPositionStart[1]) / 2)
 	searchFrame = frame[lastKnownPositionStart[1]:lastKnownPositionEnd[1] - lowerSearchBorder,
-				  lastKnownPositionStart[0]:lastKnownPositionEnd[0]]
+				lastKnownPositionStart[0]:lastKnownPositionEnd[0]]
 
 	hsvFrameConstrained = cv2.cvtColor(searchFrame, cv2.COLOR_BGR2HSV)
 	if hsvFrameConstrained is not np.zeros((scaleY, scaleX), np.uint8):
@@ -211,36 +246,43 @@ while cap.isOpened():
 	maskPlayer = cv2.morphologyEx(maskPlayer, cv2.MORPH_OPEN, kernel)
 
 	# Armmarkierungen finden über Suche nach Konturen in S/W-Bild
-	maskPlayerContours = find_countours(maskPlayer)
-	# print("Unsorted:", maskPlayerContours)
-	bubbleSort(maskPlayerContours)
-	# print("Sorted:", maskPlayerContours)
+	maskPlayerContours = find_contours(maskPlayer, 3)
+
+	'''Sorting the markers'''
+	bubble_sort(maskPlayerContours)
+
 	for i in maskPlayerContours:
-		center = calculateCenterOfRectangle(i)
+		center = calculate_center_of_rectangle(i)
 		cv2.circle(frame, center, 7, (0, 255, 0), 2)
 
 	# draw lines between rectangles
 	# stick lines to rectangles?
 	if len(maskPlayerContours) >= 3:
 		# shoulder to elbow
-		cv2.line(frame, calculateCenterOfRectangle(maskPlayerContours[0]),
-				calculateCenterOfRectangle(maskPlayerContours[1]), (255, 255, 255))
+		cv2.line(frame, calculate_center_of_rectangle(maskPlayerContours[0]),
+				calculate_center_of_rectangle(maskPlayerContours[1]), (255, 255, 255))
 		# elbow to hand
-		cv2.line(frame, calculateCenterOfRectangle(maskPlayerContours[1]),
-				calculateCenterOfRectangle(maskPlayerContours[2]), (255, 255, 255))
+		cv2.line(frame, calculate_center_of_rectangle(maskPlayerContours[1]),
+				calculate_center_of_rectangle(maskPlayerContours[2]), (255, 255, 255))
 
-		a = calculateCenterOfRectangle(maskPlayerContours[0])
-		b = calculateCenterOfRectangle(maskPlayerContours[1])
-		c = calculateCenterOfRectangle(maskPlayerContours[2])
-		print(abs(abs(get_angle(b, c)) - abs(get_angle(a, b))))
-		# print(math.degrees(math.acos(b/c)))
-		print(get_angle(b, c), " | ", get_angle(a, b))
+		a = calculate_center_of_rectangle(maskPlayerContours[0])
+		b = calculate_center_of_rectangle(maskPlayerContours[1])
+		c = calculate_center_of_rectangle(maskPlayerContours[2])
 
+		'''Calculate angle and put a label with it on screen'''
+		angle = (180-(get_angle(b, c)-get_angle(a, b)))
+		labelAngle = "{}: {:.2f}%".format('Winkel', angle)
+		cv2.putText(frame, labelAngle, (40, 40),
+					cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
 
-	# show the output
+	score_label = "{}: {}".format("Score", hit_count)
+	cv2.putText(frame, score_label, (scaleX - 170, scaleY - 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+
+	'''show the output'''
 	cv2.imshow("Maske Spieler", maskPlayer)
 	cv2.imshow("Frame", frame)
 	cv2.imshow("Searchframe", searchFrame)
+	track_scoring(frame)
 
 	if cv2.waitKey(30) != -1:
 		break

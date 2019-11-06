@@ -1,6 +1,6 @@
 # Bachelor Projektarbeit
 Basketball-Wurfanalyse mithilfe von Python, neuronalen Netzen sowie openCV. <br/>
-Es soll ein vorher gefilmtes Video von der Software hinsichtlich des Wurfverhaltens des gefilmten Spieler analysiert werden. <br/>
+Es soll ein vorher gefilmtes Video von der Software hinsichtlich des Wurfverhaltens, mit Fokus auf den Winkel des Wurfarmes, des gefilmten Spieler analysiert werden. <br/>
 
 ## Setup ##
 [Videos und Trainingsdaten](https://www.dropbox.com/sh/jru069x8v3w1gp3/AACdkQ-0Xbp_38oReUBgTlSUa?dl=0) herunterladen und jeweils im Skript 
@@ -25,8 +25,8 @@ python real_time_object_detection.py
 - [x] Marker in Suchframe tracken
 - [x] Arm-Markierungen labeln
 - [x] Verbindungen zwischen Arm-Markierungen zeichnen
-- [ ] Winkel und andere Werte kalkulieren
-- [ ] Treffer/Fehlwürfe erkennen
+- [x] Winkel in der Armbeuge kalkulieren
+- [x] Treffer erkennen
 - [ ] Abgleich mit z.B. "perfektem Wurf" von Nowitzki
 - [ ] Performance verbessern (z.B. skalieren)
 - [ ] Nutzer hat die Möglichkeit die getrackte Farbe anzugeben
@@ -36,9 +36,12 @@ python real_time_object_detection.py
 * Arm-Markierungen konstant tracken, um Linien zu zeichnen. Sortierung nach x-Wert klappt perfekt, 
   nur ist das Handgelenk irgendwann im Wurfablauf "zwischen" Ellenbogen und Schulter. (SOLVED)
 * Die vielen Array-Berechnungen schlagen sich in der Performance nieder.
+* Markierungen dauerhaft perfekt tracken.
 
 
 ## Milestones ##
 * Person im Bild wird immer erkannt.
 * Fixpunkte am Arm des Werfers (Schulter, Ellenbogen, Handgelenk) werden richtig getrackt.
 * Vewendung einer anderen Videoquelle funktioniert direkt ohne etwas anpassen zu müssen.
+* Winkel in der Armbeuge tracken.
+* Score tracken über Markierung am Netz.
