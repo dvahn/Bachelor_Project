@@ -60,6 +60,8 @@ last_frame_area = 1000
 
 hit_count = 0
 
+ready = False
+ready_label = "Throwing!"
 
 def find_contours(roi, count):
 	im2, cnts, hierarchy = cv2.findContours(roi.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
@@ -148,7 +150,13 @@ def track_scoring(fr):
 
 		last_frame_area = current_area
 
+def check_ready(marker):
 
+	global ready
+	if len(marker) == 3 and marker[1][1] > marker[0][1] and marker[1][1] > marker[2][1]:
+		ready = True
+	if len(marker) < 3:
+		ready = False
 
 scaleX = 960
 scaleY = 540
@@ -194,8 +202,7 @@ while cap.isOpened():
 			(startX, startY, endX, endY) = box.astype("int")
 
 			# draw the prediction on the frame
-			label = "{}: {:.2f}%".format(CLASSES[idx],
-										 confidence * 100)
+			label = "{}: {:.2f}%".format(CLASSES[idx], confidence * 100)
 			cv2.rectangle(frame, (startX, startY), (endX, endY),
 						COLORS[idx], 2)
 			y = startY - 15 if startY - 15 > 15 else startY + 15
@@ -277,6 +284,10 @@ while cap.isOpened():
 
 	score_label = "{}: {}".format("Score", hit_count)
 	cv2.putText(frame, score_label, (scaleX - 170, scaleY - 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+
+	check_ready(maskPlayerContours)
+	if ready:
+		cv2.putText(frame, ready_label, (40, scaleY - 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
 
 	'''show the output'''
 	cv2.imshow("Maske Spieler", maskPlayer)
