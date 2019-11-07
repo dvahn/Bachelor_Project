@@ -20,9 +20,9 @@ args = vars(ap.parse_args())
 # initialize the list of class labels MobileNet SSD was trained to
 # detect, then generate a set of bounding box colors for each class
 CLASSES = ["background", "aeroplane", "bicycle", "bird", "boat",
-		   "bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
-		   "dog", "horse", "motorbike", "person", "pottedplant", "sheep",
-		   "sofa", "train", "tvmonitor"]
+		"bottle", "bus", "car", "cat", "chair", "cow", "diningtable",
+		"dog", "horse", "motorbike", "person", "pottedplant", "sheep",
+		"sofa", "train", "tvmonitor"]
 COLORS = np.random.uniform(0, 200, size=(len(CLASSES), 3))
 
 # load the serialized model from disk
@@ -34,34 +34,43 @@ if args["prototxt"] is not None and args["model"] is not None:
 else:
 	# run default config
 	net = cv2.dnn.readNetFromCaffe("../realtime_detection/MobileNetSSD_deploy.prototxt.txt",
-								   "../realtime_detection/MobileNetSSD_deploy.caffemodel")
+								"../realtime_detection/MobileNetSSD_deploy.caffemodel")
 
 # initialize the video stream, allow the stream to warmup,
 # and initialize the FPS counter
 print("[INFO] Loading video...")
 
-lastKnownPositionStart = None
-lastKnownPositionEnd = None
-lastKnownIdx = None
+'''constants and parameters'''
+last_known_position_start = None
+last_known_position_end = None
+last_known_idx = None
 label = None
-searchFrame = None
-hConst = 0
-sConst = 0
-vConst = 0
+search_frame = None
+h_const = 0
+s_const = 0
+v_const = 0
 
-hueLowerThresholdRED = 174
-hueUpperThresholdRED = 177
-saturationThreshold = 120
-
-hueLowerThresholdGREEN = 69
-hueUpperThresholdGREEN = 80
+hue_lower_threshold_red = 174
+hue_upper_threshold_red = 177
+hue_lower_threshold_green = 69
+hue_upper_threshold_green = 80
+saturation_threshold = 120
 
 last_frame_area = 1000
 
 hit_count = 0
 counter = 0
 
-ready = False
+min_angle = 360
+max_angle = 0
+current_min_angle = 360
+current_max_angle = 0
+
+attempts = 0
+
+motion_line = []
+
+ready = True
 ready_label = "Throwing!"
 
 def find_contours(roi, count):
@@ -96,7 +105,6 @@ def calculate_area_of_rectangle(list_of_corners):
 
 	return area
 
-
 # bubble sort for detected markers, to get the lines drawn correctly
 # Order is: shoulder, elbow, hand
 def bubble_sort(arr):
@@ -112,8 +120,8 @@ def bubble_sort(arr):
 			if arr[j][0] > arr[j + 1][0]:
 				arr[j], arr[j + 1] = arr[j + 1], arr[j]
 
-	if calculate_center_of_rectangle(arr[1])[1] < calculate_center_of_rectangle(arr[2])[1]:
-		# check if "hand" is between "shoulder" and "elbow"
+	# check if "hand" is between "shoulder" and "elbow"
+	if calculate_center_of_rectangle(arr[1])[1] < calculate_center_of_rectangle(arr[2])[1] and calculate_center_of_rectangle(arr[0])[0] < calculate_center_of_rectangle(arr[1])[0] < calculate_center_of_rectangle(arr[2])[0]:
 		arr[1], arr[2] = arr[2], arr[1]
 
 def get_angle(p1, p2):
@@ -125,14 +133,13 @@ def get_angle(p1, p2):
 	return math.degrees(rads)
 
 def track_scoring(fr):
-
 	global last_frame_area
 	global hit_count
 	hsv_frame = cv2.cvtColor(fr, cv2.COLOR_BGR2HSV)
 	hue, sat, val = cv2.split(hsv_frame)
-	h_mask_green = cv2.inRange(hue, hueLowerThresholdGREEN, hueUpperThresholdGREEN)
-	ret1, sat_mask = cv2.threshold(sat, saturationThreshold, 255,
-								cv2.THRESH_BINARY)
+	h_mask_green = cv2.inRange(hue, hue_lower_threshold_green, hue_upper_threshold_green)
+	ret1, sat_mask = cv2.threshold(sat, saturation_threshold, 255,
+								   cv2.THRESH_BINARY)
 	mask_net = cv2.bitwise_and(h_mask_green, sat_mask)
 	cv2.medianBlur(mask_net, 3, mask_net)
 	net_contours = find_contours(mask_net, 1)
@@ -145,14 +152,13 @@ def track_scoring(fr):
 
 		current_area = calculate_area_of_rectangle(flat_net_contours)
 
-		if current_area < last_frame_area * (5/10):
+		if current_area < last_frame_area * (7/10):
 			print("Hit")
 			hit_count += 1
 
 		last_frame_area = current_area
 
 def check_ready(marker):
-
 	global ready
 	global counter
 	if len(marker) == 3:
@@ -160,14 +166,31 @@ def check_ready(marker):
 	if len(marker) < 3:
 		ready = False
 		counter = 0
-	if counter >= 10:
+	if counter >= 8:
 		ready = True
+
+def calculate_current_min_max_angles(ang):
+	global min_angle
+	global max_angle
+
+	if max_angle < ang < 200:
+		max_angle = ang
+	if min_angle > ang >= 0:
+		min_angle = ang
+
+	return min_angle, max_angle
+
+def reset_angles():
+	global min_angle
+	global max_angle
+	min_angle = 360
+	max_angle = 0
 
 scaleX = 960
 scaleY = 540
 cap = cv2.VideoCapture('../Videos/video_3.mp4')
 # vs = VideoStream(src=0).start()
-time.sleep(2.0)
+time.sleep(1.0)
 fps = FPS().start()
 
 # loop over the frames from the video stream
@@ -215,95 +238,110 @@ while cap.isOpened():
 						cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLORS[idx], 2)
 
 			'''Define area in which markers are tracked'''
-			lastKnownPositionStart = (startX - 10, startY - 50)
-			lastKnownPositionEnd = (endX + 10, endY + 10)
-			lastKnownIdx = idx
+			last_known_position_start = (startX - 10, startY - 50)
+			last_known_position_end = (endX + 10, endY + 10)
+			last_known_idx = idx
 
 		else:
 			# print rectangle if detection is lost
-			cv2.rectangle(frame, lastKnownPositionStart, lastKnownPositionEnd, COLORS[lastKnownIdx], 2)
+			cv2.rectangle(frame, last_known_position_start, last_known_position_end, COLORS[last_known_idx], 2)
 
-			y = lastKnownPositionStart[1] - 15 if lastKnownPositionStart[1] - 15 > 15 else lastKnownPositionStart[1] + 15
-			cv2.putText(frame, label, (lastKnownPositionStart[0], y),
-						cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLORS[lastKnownIdx], 2)
+			y = last_known_position_start[1] - 15 if last_known_position_start[1] - 15 > 15 else last_known_position_start[1] + 15
+			cv2.putText(frame, label, (last_known_position_start[0], y),
+						cv2.FONT_HERSHEY_SIMPLEX, 0.5, COLORS[last_known_idx], 2)
 
 	'''Tracking of markers'''
-	lowerSearchBorder = int((lastKnownPositionEnd[1] - lastKnownPositionStart[1]) / 2)
-	searchFrame = frame[lastKnownPositionStart[1]:lastKnownPositionEnd[1] - lowerSearchBorder,
-				lastKnownPositionStart[0]:lastKnownPositionEnd[0]]
+	lowerSearchBorder = int((last_known_position_end[1] - last_known_position_start[1]) / 2)
+	search_frame = frame[last_known_position_start[1]:last_known_position_end[1] - lowerSearchBorder,
+				  last_known_position_start[0]:last_known_position_end[0]]
 
-	hsvFrameConstrained = cv2.cvtColor(searchFrame, cv2.COLOR_BGR2HSV)
+	hsvFrameConstrained = cv2.cvtColor(search_frame, cv2.COLOR_BGR2HSV)
 	if hsvFrameConstrained is not np.zeros((scaleY, scaleX), np.uint8):
-		hConst, sConst, vConst = cv2.split(hsvFrameConstrained)
+		h_const, s_const, v_const = cv2.split(hsvFrameConstrained)
 
-	_, smask = cv2.threshold(sConst, saturationThreshold, 255,
-							 cv2.THRESH_BINARY)
+	_, s_mask = cv2.threshold(s_const, saturation_threshold, 255,
+							cv2.THRESH_BINARY)
 
-	hMaskRed = cv2.inRange(hConst, hueLowerThresholdRED, hueUpperThresholdRED)
+	hMaskRed = cv2.inRange(h_const, hue_lower_threshold_red, hue_upper_threshold_red)
 	cv2.medianBlur(hMaskRed, 1, hMaskRed)
 
 	# Verknüpfung der beiden Masken (Hue, Saturation)
-	maskPlayer = cv2.bitwise_and(hMaskRed, smask)
+	mask_player = cv2.bitwise_and(hMaskRed, s_mask)
 
 	# Ausschnittarray wieder auf FullSize, damit bitwise_and geht
-	helperArray = np.zeros((scaleY, scaleX), np.uint8)
-	helperArray[lastKnownPositionStart[1]:lastKnownPositionEnd[1] - lowerSearchBorder,
-	lastKnownPositionStart[0]:lastKnownPositionEnd[0]] = maskPlayer
-	maskPlayer = helperArray
+	helper_array = np.zeros((scaleY, scaleX), np.uint8)
+	helper_array[last_known_position_start[1]:last_known_position_end[1] - lowerSearchBorder,
+	last_known_position_start[0]:last_known_position_end[0]] = mask_player
+	mask_player = helper_array
 
 	# Morphological Filters
 	kernel = np.ones((3, 3), np.uint8)
-	cv2.medianBlur(maskPlayer, 3, maskPlayer)
-	maskPlayer = cv2.dilate(maskPlayer, kernel, iterations=1)
-	maskPlayer = cv2.morphologyEx(maskPlayer, cv2.MORPH_OPEN, kernel)
+	cv2.medianBlur(mask_player, 3, mask_player)
+	mask_player = cv2.dilate(mask_player, kernel, iterations=1)
+	mask_player = cv2.morphologyEx(mask_player, cv2.MORPH_OPEN, kernel)
 
 	# Armmarkierungen finden über Suche nach Konturen in S/W-Bild
-	maskPlayerContours = find_contours(maskPlayer, 3)
+	mask_player_contours = find_contours(mask_player, 3)
 
 	'''Sorting the markers'''
-	bubble_sort(maskPlayerContours)
+	bubble_sort(mask_player_contours)
 
-	for i in maskPlayerContours:
+	for i in mask_player_contours:
 		center = calculate_center_of_rectangle(i)
 		cv2.circle(frame, center, 7, (0, 255, 0), 2)
 
+
 	'''Checking if throwing motion is in progress'''
-	check_ready(maskPlayerContours)
+	check_ready(mask_player_contours)
 	if ready:
 		cv2.putText(frame, ready_label, (40, scaleY - 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
 		# draw lines between rectangles
-		if len(maskPlayerContours) >= 3:
+		if len(mask_player_contours) >= 3:
 			# shoulder to elbow
-			cv2.line(frame, calculate_center_of_rectangle(maskPlayerContours[0]),
-					calculate_center_of_rectangle(maskPlayerContours[1]), (255, 255, 255))
+			cv2.line(frame, calculate_center_of_rectangle(mask_player_contours[0]),
+					calculate_center_of_rectangle(mask_player_contours[1]), (255, 255, 255))
 			# elbow to hand
-			cv2.line(frame, calculate_center_of_rectangle(maskPlayerContours[1]),
-					calculate_center_of_rectangle(maskPlayerContours[2]), (255, 255, 255))
+			cv2.line(frame, calculate_center_of_rectangle(mask_player_contours[1]),
+					calculate_center_of_rectangle(mask_player_contours[2]), (255, 255, 255))
 
-			a = calculate_center_of_rectangle(maskPlayerContours[0])
-			b = calculate_center_of_rectangle(maskPlayerContours[1])
-			c = calculate_center_of_rectangle(maskPlayerContours[2])
+			'''drawing the motion as a line'''
+			motion_line.append(calculate_center_of_rectangle(mask_player_contours[2]))
+			for p in motion_line:
+				cv2.circle(frame, p, 1, (0, 0, 255), 2)
 
 			'''Calculate angle and put a label with it on screen'''
-			angle = (180-(get_angle(b, c)-get_angle(a, b)))
-			labelAngle = "{}: {:.2f}° ".format('Winkel', angle)
-			cv2.putText(frame, labelAngle, (40, 40),
+			a = calculate_center_of_rectangle(mask_player_contours[0])
+			b = calculate_center_of_rectangle(mask_player_contours[1])
+			c = calculate_center_of_rectangle(mask_player_contours[2])
+
+			angle = int((180-(get_angle(b, c)-get_angle(a, b))))
+			label_angle = '{}: {} degree'.format('Angle', angle)
+			cv2.putText(frame, label_angle, (40, 40),
 						cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
 
-	score_label = "{}: {}".format("Score", hit_count)
-	cv2.putText(frame, score_label, (scaleX - 170, scaleY - 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+			current_min_angle, current_max_angle = calculate_current_min_max_angles(angle)
+
+	else:
+		motion_line = []
+		reset_angles()
+
+	print(current_min_angle, current_max_angle)
 
 	'''show the output'''
-	cv2.imshow("Maske Spieler", maskPlayer)
-	cv2.imshow("Frame", frame)
-	cv2.imshow("Searchframe", searchFrame)
 	track_scoring(frame)
-
-	if cv2.waitKey(30) != -1:
-		break
+	score_label = "{}: {}".format("Score", hit_count)
+	cv2.putText(frame, score_label, (scaleX - 170, scaleY - 40), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+	current_min_angle_label = "{}: {}".format("Angle MIN", current_min_angle)
+	current_max_angle_label = "{}: {}".format("Angle MAX", current_max_angle)
+	cv2.putText(frame, current_min_angle_label, (scaleX-300, scaleY - 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+	cv2.putText(frame, current_max_angle_label, (scaleX-300, scaleY - 260), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+	cv2.imshow("Frame", frame)
 
 	# update the FPS counter
 	fps.update()
+
+	if cv2.waitKey(30) != -1:
+		break
 
 # stop the timer and display FPS information
 fps.stop()
