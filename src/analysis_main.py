@@ -61,14 +61,14 @@ last_frame_area = 1000
 hit_count = 0
 counter = 0
 
-min_angle = 360
+min_angle = 90
 max_angle = 0
-current_min_angle = 360
+current_min_angle = 90
 current_max_angle = 0
 
-attempts = 0
-
 motion_line = []
+
+scoring_stats = []
 
 ready = True
 ready_label = "Throwing!"
@@ -113,9 +113,9 @@ def bubble_sort(arr):
 	if n < 3:
 		return arr
 
-	for i in range(n):
+	for k in range(n):
 
-		for j in range(0, n - i - 1):
+		for j in range(0, n - k - 1):
 
 			if arr[j][0] > arr[j + 1][0]:
 				arr[j], arr[j + 1] = arr[j + 1], arr[j]
@@ -138,8 +138,7 @@ def track_scoring(fr):
 	hsv_frame = cv2.cvtColor(fr, cv2.COLOR_BGR2HSV)
 	hue, sat, val = cv2.split(hsv_frame)
 	h_mask_green = cv2.inRange(hue, hue_lower_threshold_green, hue_upper_threshold_green)
-	ret1, sat_mask = cv2.threshold(sat, saturation_threshold, 255,
-								   cv2.THRESH_BINARY)
+	ret1, sat_mask = cv2.threshold(sat, saturation_threshold, 255, cv2.THRESH_BINARY)
 	mask_net = cv2.bitwise_and(h_mask_green, sat_mask)
 	cv2.medianBlur(mask_net, 3, mask_net)
 	net_contours = find_contours(mask_net, 1)
@@ -152,9 +151,9 @@ def track_scoring(fr):
 
 		current_area = calculate_area_of_rectangle(flat_net_contours)
 
-		if current_area < last_frame_area * (7/10):
-			print("Hit")
+		if current_area < last_frame_area * (4/10):
 			hit_count += 1
+			scoring_stats.append((current_min_angle, current_max_angle))
 
 		last_frame_area = current_area
 
@@ -175,7 +174,7 @@ def calculate_current_min_max_angles(ang):
 
 	if max_angle < ang < 200:
 		max_angle = ang
-	if min_angle > ang >= 0:
+	if min_angle > ang >= 0 and not ang < min_angle - 10:
 		min_angle = ang
 
 	return min_angle, max_angle
@@ -183,7 +182,7 @@ def calculate_current_min_max_angles(ang):
 def reset_angles():
 	global min_angle
 	global max_angle
-	min_angle = 360
+	min_angle = 90
 	max_angle = 0
 
 scaleX = 960
@@ -253,11 +252,11 @@ while cap.isOpened():
 	'''Tracking of markers'''
 	lowerSearchBorder = int((last_known_position_end[1] - last_known_position_start[1]) / 2)
 	search_frame = frame[last_known_position_start[1]:last_known_position_end[1] - lowerSearchBorder,
-				  last_known_position_start[0]:last_known_position_end[0]]
+				last_known_position_start[0]:last_known_position_end[0]]
 
-	hsvFrameConstrained = cv2.cvtColor(search_frame, cv2.COLOR_BGR2HSV)
-	if hsvFrameConstrained is not np.zeros((scaleY, scaleX), np.uint8):
-		h_const, s_const, v_const = cv2.split(hsvFrameConstrained)
+	hsv_frame_constrained = cv2.cvtColor(search_frame, cv2.COLOR_BGR2HSV)
+	if hsv_frame_constrained is not np.zeros((scaleY, scaleX), np.uint8):
+		h_const, s_const, v_const = cv2.split(hsv_frame_constrained)
 
 	_, s_mask = cv2.threshold(s_const, saturation_threshold, 255,
 							cv2.THRESH_BINARY)
@@ -308,6 +307,7 @@ while cap.isOpened():
 			motion_line.append(calculate_center_of_rectangle(mask_player_contours[2]))
 			for p in motion_line:
 				cv2.circle(frame, p, 1, (0, 0, 255), 2)
+				# TODO: draw throwing motion as line
 
 			'''Calculate angle and put a label with it on screen'''
 			a = calculate_center_of_rectangle(mask_player_contours[0])
@@ -325,8 +325,6 @@ while cap.isOpened():
 		motion_line = []
 		reset_angles()
 
-	print(current_min_angle, current_max_angle)
-
 	'''show the output'''
 	track_scoring(frame)
 	score_label = "{}: {}".format("Score", hit_count)
@@ -335,8 +333,9 @@ while cap.isOpened():
 	current_max_angle_label = "{}: {}".format("Angle MAX", current_max_angle)
 	cv2.putText(frame, current_min_angle_label, (scaleX-300, scaleY - 200), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
 	cv2.putText(frame, current_max_angle_label, (scaleX-300, scaleY - 260), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-	cv2.imshow("Frame", frame)
-
+	cv2.imshow("Analyse", frame)
+	# cv2.imshow("Maske", mask_player)
+	# TODO: show developer and user view in separate windows
 	# update the FPS counter
 	fps.update()
 
@@ -345,7 +344,16 @@ while cap.isOpened():
 
 # stop the timer and display FPS information
 fps.stop()
-print("[INFO] Approx. FPS: {:.2f}".format(fps.fps()))
+print("[INFO] Approx. FPS: {:.2f}".format(fps.fps()) + "\n")
+
+print("[SCORING STATISTICS]")
+print("You scored with the following recorded angles: \n")
+
+for stats in scoring_stats:
+	min_angle_stats, max_angle_stats = stats
+	print("Cocking angle: " + str(min_angle_stats) + "° | " + "Release angle: " + str(max_angle_stats) + "°")
+
+
 
 # cleanup
 cap.release()

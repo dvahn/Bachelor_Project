@@ -48,6 +48,8 @@ python real_time_object_detection.py
   Es ist nicht möglich, nur anhand der Koordinaten der Marker immer perfekt zu bestimmen, ob es sich
   um Hand, Ellenbogen oder Schulter handelt.
 * Durch das nicht immer perfekte ist der berechnete Min/Max-Winkel nicht immer korrekt.
+* Das Arbeiten mit Markern setzt perfekte Farbverhältnisse vorraus, die meistens nicht gegeben sind.
+* Treffer immer korrekt tracken.
 
 
 ## Milestones ##
@@ -56,3 +58,9 @@ python real_time_object_detection.py
 * Vewendung einer anderen Videoquelle funktioniert direkt ohne etwas anpassen zu müssen.
 * Winkel in der Armbeuge tracken.
 * Score tracken über Markierung am Netz.
+
+
+## Ausblick ##
+* Speichern von Wurfform (Rote Linie).
+* Andere Perspektiven z.B. von hinten, oder mit Fokus auf den Beinen.
+* Abgleich mit Würfen von Profis (Trainingsmodus).
