@@ -30,8 +30,8 @@ python real_time_object_detection.py
 - [x] Treffer erkennen
 - [x] Nur bei Wurf den Winkel berechnen
 - [x] Minimal- und Maximalwinkel für derzeitigen Wurf tracken
-- [ ] Speichern, wann am erfolgreichsten geworfen wurde
-- [ ] Statistik nach Programmdurchlauf ausgeben
+- [x] Speichern, wann am erfolgreichsten geworfen wurde
+- [x] Statistik nach Programmdurchlauf ausgeben
 
 ### Nice-to-have ###
 - [ ] Performance verbessern (z.B. skalieren)
