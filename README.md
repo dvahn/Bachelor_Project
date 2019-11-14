@@ -3,7 +3,7 @@ Basketball-Wurfanalyse mithilfe von Python, neuronalen Netzen sowie openCV. <br/
 Es soll ein vorher gefilmtes Video von der Software hinsichtlich des Wurfverhaltens, mit Fokus auf den Winkel des Wurfarmes, des gefilmten Spieler analysiert werden. <br/>
 
 ## Setup ##
-[Videos und Trainingsdaten](https://www.dropbox.com/sh/jru069x8v3w1gp3/AACdkQ-0Xbp_38oReUBgTlSUa?dl=0) herunterladen und jeweils im Skript 
+[Video und Trainingsdaten](https://www.dropbox.com/sh/jru069x8v3w1gp3/AACdkQ-0Xbp_38oReUBgTlSUa?dl=0) herunterladen und jeweils im Skript 
 an den benötigten Stellen referenzieren bzw. eigene Videos nutzen. <br/><br/>
 Zum Ausführen: <br/>
 ``
