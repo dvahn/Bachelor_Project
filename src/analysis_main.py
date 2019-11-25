@@ -255,7 +255,7 @@ while cap.isOpened():
 				last_known_position_start[0]:last_known_position_end[0]]
 
 	hsv_frame_constrained = cv2.cvtColor(search_frame, cv2.COLOR_BGR2HSV)
-	if hsv_frame_constrained is not np.zeros((scaleY, scaleX), np.uint8):
+	if hsv_frame_constrained is not np.zeros((scaleY, scaleX), np.uint8) and not None:
 		h_const, s_const, v_const = cv2.split(hsv_frame_constrained)
 
 	_, s_mask = cv2.threshold(s_const, saturation_threshold, 255,
